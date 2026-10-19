@@ -19,6 +19,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var state: ServerState = .down
     @Published private(set) var installedModels: [InstalledModel] = []
     @Published private(set) var catalog: [CatalogVariant] = []
+    @Published private(set) var activity: [ActivityEntry] = []
     @Published private(set) var lastError: String?
     @Published private(set) var lastRefresh: Date?
 
@@ -124,6 +125,7 @@ final class AppModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let up = ServerClient.health(port: port)
             let served = up ? ServerClient.servedModel(port: port) : nil
+            let activity = ActivityLog.entries(port: port)
             DispatchQueue.main.async {
                 guard let self else { return }
                 switch (up, served) {
@@ -138,6 +140,7 @@ final class AppModel: ObservableObject {
                         self.ownsServer = false
                     }
                 }
+                self.activity = activity
             }
         }
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -196,6 +199,16 @@ final class AppModel: ObservableObject {
     /// The variants of one catalog model, in catalog order.
     func variants(for model: String) -> [CatalogVariant] {
         catalog.filter { $0.model == model }
+    }
+
+    /// Aggregate stats over the parsed activity.
+    var activitySummary: ActivitySummary {
+        ActivitySummary.compute(activity)
+    }
+
+    /// The most recent activity entries, newest last, capped for the UI.
+    var recentActivity: [ActivityEntry] {
+        Array(activity.suffix(20))
     }
 
     private static func describe(_ error: Error) -> String {

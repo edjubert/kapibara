@@ -64,6 +64,10 @@ struct MenuContent: View {
                 modelsSection
                 Divider()
                 downloadSection
+                if !model.activity.isEmpty {
+                    Divider()
+                    analyticsSection
+                }
             }
             Divider()
             settingsSection
@@ -236,6 +240,63 @@ struct MenuContent: View {
                 }
             }
         }
+    }
+
+    private var analyticsSection: some View {
+        let summary = model.activitySummary
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.t("analytics.headline")).font(.headline)
+            HStack(spacing: 12) {
+                statColumn(L10n.t("analytics.total_requests", summary.requestCount))
+                statColumn(L10n.t("analytics.total_prompt_tokens", formatTokens(summary.totalPromptTokens)))
+                statColumn(L10n.t("analytics.total_output_tokens", formatTokens(summary.totalOutputTokens)))
+            }
+            HStack(spacing: 12) {
+                statColumn(L10n.t("analytics.avg_tps", summary.avgTokPerSec))
+                statColumn(L10n.t("analytics.avg_prefill", summary.avgPrefillMs))
+            }
+            Divider()
+            ForEach(model.recentActivity) { entry in
+                HStack(spacing: 6) {
+                    Text("\(entry.promptTokens) → \(entry.outputTokens)")
+                        .font(.caption2)
+                    Text(String(format: "%.1f tok/s", entry.tokPerSec))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(entry.finishReason)
+                        .font(.caption2)
+                        .foregroundStyle(finishColor(entry.finishReason))
+                }
+            }
+        }
+    }
+
+    private func statColumn(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+    }
+
+    private func finishColor(_ reason: String) -> Color {
+        switch reason {
+        case "stop": return .green
+        case "tool_calls": return .blue
+        case "length": return .orange
+        case "cancelled": return .red
+        default: return .secondary
+        }
+    }
+
+    /// Compact token count: 1.6M, 42K, 800.
+    private func formatTokens(_ count: Int) -> String {
+        if count >= 1_000_000 {
+            return String(format: "%.1fM", Double(count) / 1_000_000)
+        }
+        if count >= 1_000 {
+            return String(format: "%.0fK", Double(count) / 1_000)
+        }
+        return "\(count)"
     }
 
     private var settingsSection: some View {
