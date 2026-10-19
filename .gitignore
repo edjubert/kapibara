@@ -1,0 +1,4 @@
+.build/
+Kapibara.app/
+dist/
+.DS_Store

@@ -1,0 +1,62 @@
+/* Kapibara — English catalog */
+
+/* Menu bar */
+"bar.off" = "off";
+"bar.starting" = "…";
+
+/* Server section */
+"server.headline" = "Server";
+"server.up" = "Up";
+"server.down" = "Down";
+"server.start" = "Start server";
+"server.stop" = "Stop server";
+"server.model" = "Model";
+"server.port" = "Port";
+"server.context" = "Context";
+"server.slots" = "Slots";
+"server.open_chat" = "Open chat page";
+
+/* Models section */
+"models.headline" = "Downloaded models";
+"models.empty" = "No model downloaded yet.";
+"models.complete" = "complete";
+"models.incomplete" = "incomplete";
+"models.includes" = "includes";
+
+/* Download section */
+"download.headline" = "Download a model";
+"download.pick" = "Model";
+"download.variant" = "Variant";
+"download.size" = "Size";
+"download.button" = "Download";
+"download.downloading" = "Downloading…";
+"download.progress" = "%.0f%%";
+"download.done" = "Downloaded";
+"download.error" = "Download failed";
+
+/* Analytics section */
+"analytics.headline" = "Activity";
+"analytics.tab.prompts" = "Prompts";
+"analytics.tab.generations" = "Generations";
+"analytics.empty" = "No activity yet. Start the server and send a request.";
+"analytics.total_requests" = "%d requests";
+"analytics.total_prompt_tokens" = "%@ prompt tokens";
+"analytics.total_output_tokens" = "%@ output tokens";
+"analytics.avg_tps" = "%.1f tok/s avg";
+"analytics.avg_prefill" = "%.0f ms avg prefill";
+
+/* Settings */
+"settings.headline" = "Settings";
+"login.toggle" = "Launch at login";
+"settings.language" = "Language";
+"language.system" = "System";
+"language.french" = "Français";
+"language.english" = "English";
+
+/* Common */
+"refresh.button" = "Refresh";
+"quit.button" = "Quit Kapibara";
+"version.display" = "v%@";
+"error.exited" = "kapitsa exited with code %d";
+"error.bad_json" = "Unexpected kapitsa output";
+"error.not_installed" = "kapitsa not found. Install it with: brew install nace-ai/tap/kapitsa";

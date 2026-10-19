@@ -1,0 +1,62 @@
+/* Kapibara — catalogue français */
+
+/* Barre de menu */
+"bar.off" = "arrêté";
+"bar.starting" = "…";
+
+/* Section serveur */
+"server.headline" = "Serveur";
+"server.up" = "En ligne";
+"server.down" = "Arrêté";
+"server.start" = "Démarrer le serveur";
+"server.stop" = "Arrêter le serveur";
+"server.model" = "Modèle";
+"server.port" = "Port";
+"server.context" = "Contexte";
+"server.slots" = "Slots";
+"server.open_chat" = "Ouvrir la page de chat";
+
+/* Section modèles */
+"models.headline" = "Modèles téléchargés";
+"models.empty" = "Aucun modèle téléchargé.";
+"models.complete" = "complet";
+"models.incomplete" = "incomplet";
+"models.includes" = "inclus";
+
+/* Section téléchargement */
+"download.headline" = "Télécharger un modèle";
+"download.pick" = "Modèle";
+"download.variant" = "Variante";
+"download.size" = "Taille";
+"download.button" = "Télécharger";
+"download.downloading" = "Téléchargement…";
+"download.progress" = "%.0f %%";
+"download.done" = "Téléchargé";
+"download.error" = "Échec du téléchargement";
+
+/* Section activité */
+"analytics.headline" = "Activité";
+"analytics.tab.prompts" = "Prompts";
+"analytics.tab.generations" = "Générations";
+"analytics.empty" = "Aucune activité. Démarrez le serveur et envoyez une requête.";
+"analytics.total_requests" = "%d requêtes";
+"analytics.total_prompt_tokens" = "%@ tokens de prompt";
+"analytics.total_output_tokens" = "%@ tokens générés";
+"analytics.avg_tps" = "%.1f tok/s moy";
+"analytics.avg_prefill" = "%.0f ms prefill moy";
+
+/* Réglages */
+"settings.headline" = "Réglages";
+"login.toggle" = "Lancer au démarrage";
+"settings.language" = "Langue";
+"language.system" = "Système";
+"language.french" = "Français";
+"language.english" = "English";
+
+/* Commun */
+"refresh.button" = "Rafraîchir";
+"quit.button" = "Quitter Kapibara";
+"version.display" = "v%@";
+"error.exited" = "kapitsa a quitté avec le code %d";
+"error.bad_json" = "Sortie kapitsa inattendue";
+"error.not_installed" = "kapitsa introuvable. Installez-le : brew install nace-ai/tap/kapitsa";
