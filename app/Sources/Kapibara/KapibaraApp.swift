@@ -91,6 +91,8 @@ struct MenuContent: View {
         .onAppear { model.refresh() }
     }
 
+    @State private var selectedModel: String = ""
+
     private var serverSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(L10n.t("server.headline")).font(.headline)
@@ -107,6 +109,39 @@ struct MenuContent: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            if model.isUp {
+                if model.ownsServer {
+                    Button(L10n.t("server.stop")) { model.stopServer() }
+                        .font(.caption)
+                }
+            } else {
+                if !model.installedModels.isEmpty {
+                    Picker(L10n.t("server.model"), selection: $selectedModel) {
+                        ForEach(model.installedModels) { m in
+                            Text(m.name).tag(m.name)
+                        }
+                    }
+                    .font(.caption)
+                    .labelsHidden()
+                    .onAppear {
+                        if selectedModel.isEmpty {
+                            selectedModel = model.installedModels.first?.name ?? ""
+                        }
+                    }
+                }
+                Button(L10n.t("server.start")) {
+                    model.startServer(model: selectedModel.isEmpty ? nil : selectedModel)
+                }
+                .font(.caption)
+                .disabled(model.installedModels.isEmpty)
+            }
+            Button(L10n.t("server.open_chat")) {
+                if let url = URL(string: "http://127.0.0.1:\(model.port)/") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            .font(.caption)
+            .disabled(!model.isUp)
         }
     }
 

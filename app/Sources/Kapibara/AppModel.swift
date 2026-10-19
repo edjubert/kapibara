@@ -27,6 +27,11 @@ final class AppModel: ObservableObject {
     }
 
     private var timer: AnyCancellable?
+    private let serverProcess = ServerProcess()
+
+    /// True when the app itself spawned the running server, so the
+    /// Stop button only ever kills a process it owns.
+    @Published private(set) var ownsServer: Bool = false
 
     var pollInterval: TimeInterval = 5
 
@@ -38,14 +43,48 @@ final class AppModel: ObservableObject {
             .sink { [weak self] _ in self?.refresh() }
     }
 
+    /// Spawns `kapitsa serve` on the configured port, pinned to `model`
+    /// when given. The next poll picks the server up.
+    func startServer(model: String?) {
+        let port = self.port
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                try self?.serverProcess.start(port: port, model: model)
+                DispatchQueue.main.async {
+                    self?.ownsServer = true
+                    self?.lastError = nil
+                    self?.refresh()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.lastError = Self.describe(error)
+                }
+            }
+        }
+    }
+
+    /// Stops the server, but only when the app started it. A server
+    /// launched outside the app (brew services, a terminal) is left
+    /// alone.
+    func stopServer() {
+        guard ownsServer else { return }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.serverProcess.stop()
+            DispatchQueue.main.async {
+                self?.ownsServer = false
+                self?.refresh()
+            }
+        }
+    }
+
     /// One refresh cycle: server state on the port, then the model list.
     /// Both run on background queues; the UI updates on the main thread.
     func refresh() {
         let port = self.port
-        Task { [weak self] in
-            let up = await ServerClient.health(port: port)
-            let served = up ? await ServerClient.servedModel(port: port) : nil
-            await MainActor.run {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let up = ServerClient.health(port: port)
+            let served = up ? ServerClient.servedModel(port: port) : nil
+            DispatchQueue.main.async {
                 guard let self else { return }
                 switch (up, served) {
                 case (true, let model?):
@@ -54,27 +93,29 @@ final class AppModel: ObservableObject {
                     self.state = .starting
                 case (false, _):
                     self.state = .down
+                    // Our child died or was killed: we no longer own a server.
+                    if self.ownsServer && !self.serverProcess.isRunning {
+                        self.ownsServer = false
+                    }
                 }
             }
         }
-        Task { [weak self] in
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard KapitsaCLI.isInstalled else {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     self?.lastError = L10n.t("error.not_installed")
                 }
                 return
             }
             do {
-                let models = try await Task.detached {
-                    try KapitsaCLI.list()
-                }.value
-                await MainActor.run {
+                let models = try KapitsaCLI.list()
+                DispatchQueue.main.async {
                     self?.installedModels = models
                     self?.lastError = nil
                     self?.lastRefresh = Date()
                 }
             } catch {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     self?.lastError = Self.describe(error)
                 }
             }
@@ -102,6 +143,8 @@ final class AppModel: ObservableObject {
             return L10n.t("error.exited", code)
         case KapitsaError.badJSON:
             return L10n.t("error.bad_json")
+        case KapitsaError.noBinary:
+            return L10n.t("error.not_installed")
         default:
             return error.localizedDescription
         }
