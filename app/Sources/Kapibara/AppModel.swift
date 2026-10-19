@@ -18,8 +18,13 @@ final class AppModel: ObservableObject {
 
     @Published private(set) var state: ServerState = .down
     @Published private(set) var installedModels: [InstalledModel] = []
+    @Published private(set) var catalog: [CatalogVariant] = []
     @Published private(set) var lastError: String?
     @Published private(set) var lastRefresh: Date?
+
+    /// The model currently downloading, nil when idle.
+    @Published private(set) var downloadingModel: String?
+    @Published private(set) var downloadError: String?
 
     /// Port the app manages. Stored so the settings UI can change it.
     @Published var port: Int {
@@ -28,6 +33,7 @@ final class AppModel: ObservableObject {
 
     private var timer: AnyCancellable?
     private let serverProcess = ServerProcess()
+    private let downloader = DownloadProcess()
 
     /// True when the app itself spawned the running server, so the
     /// Stop button only ever kills a process it owns.
@@ -37,10 +43,44 @@ final class AppModel: ObservableObject {
 
     private init() {
         port = UserDefaults.standard.object(forKey: "port") as? Int ?? 8000
+        NotificationCenter.default.addObserver(
+            forName: .downloadFinished,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            let code = note.userInfo?["exitCode"] as? Int32 ?? -1
+            self?.downloadError = code == 0 ? nil : L10n.t("download.error")
+            self?.refresh()
+        }
         refresh()
         timer = Timer.publish(every: pollInterval, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in self?.refresh() }
+    }
+
+    /// Starts downloading a catalog model. No-op when a download is
+    /// already running.
+    func startDownload(_ model: String) {
+        guard !downloader.isRunning else { return }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                try self?.downloader.start(model: model)
+                DispatchQueue.main.async {
+                    self?.downloadingModel = model
+                    self?.downloadError = nil
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.downloadError = Self.describe(error)
+                }
+            }
+        }
+    }
+
+    /// Cancels the running download. Kapitsa keeps the parts already
+    /// fetched and resumes on the next pull.
+    func cancelDownload() {
+        downloader.cancel()
     }
 
     /// Spawns `kapitsa serve` on the configured port, pinned to `model`
@@ -109,8 +149,12 @@ final class AppModel: ObservableObject {
             }
             do {
                 let models = try KapitsaCLI.list()
+                let doctor = try KapitsaCLI.doctor()
                 DispatchQueue.main.async {
                     self?.installedModels = models
+                    self?.catalog = doctor.catalogVariants
+                    self?.downloadingModel = (self?.downloader.isRunning == true)
+                        ? self?.downloader.currentModel : nil
                     self?.lastError = nil
                     self?.lastRefresh = Date()
                 }
@@ -135,6 +179,23 @@ final class AppModel: ObservableObject {
     var isUp: Bool {
         if case .up = state { return true }
         return false
+    }
+
+    /// The `<model>:<variant>` names already on disk, for marking the
+    /// catalog entries as downloaded.
+    var installedModelIds: Set<String> {
+        Set(installedModels.map(\.name))
+    }
+
+    /// Catalog model names, in catalog order, without duplicates.
+    var catalogModels: [String] {
+        var seen: Set<String> = []
+        return catalog.filter { seen.insert($0.model).inserted }.map(\.model)
+    }
+
+    /// The variants of one catalog model, in catalog order.
+    func variants(for model: String) -> [CatalogVariant] {
+        catalog.filter { $0.model == model }
     }
 
     private static func describe(_ error: Error) -> String {

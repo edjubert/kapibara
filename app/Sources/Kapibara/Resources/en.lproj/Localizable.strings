@@ -33,6 +33,8 @@
 "download.progress" = "%.0f%%";
 "download.done" = "Downloaded";
 "download.error" = "Download failed";
+"download.cancel" = "Cancel";
+"download.does_not_fit" = "does not fit this Mac";
 
 /* Analytics section */
 "analytics.headline" = "Activity";

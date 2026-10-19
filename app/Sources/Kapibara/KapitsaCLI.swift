@@ -55,6 +55,24 @@ struct DoctorModel: Codable, Equatable {
     }
 }
 
+/// One catalog variant, from `kapitsa doctor --json`'s `catalog_variants`.
+struct CatalogVariant: Codable, Equatable, Identifiable {
+    let model: String
+    let variant: String
+    let fits: Bool
+    let planned: Bool
+    let chosen: Bool
+    let isDefault: Bool
+
+    /// "qwen3.8-27b:4bit" — the name `kapitsa pull` and `kapitsa list` use.
+    var id: String { "\(model):\(variant)" }
+
+    enum CodingKeys: String, CodingKey {
+        case model, variant, fits, planned, chosen
+        case isDefault = "default"
+    }
+}
+
 /// This Mac, from `kapitsa doctor --json`.
 struct DoctorReport: Codable, Equatable {
     let chip: String
@@ -63,6 +81,7 @@ struct DoctorReport: Codable, Equatable {
     let macos: String
     let memoryBudgetBytes: Int64
     let models: [DoctorModel]
+    let catalogVariants: [CatalogVariant]
 
     enum CodingKeys: String, CodingKey {
         case chip
@@ -71,6 +90,7 @@ struct DoctorReport: Codable, Equatable {
         case macos
         case memoryBudgetBytes = "memory_budget_bytes"
         case models
+        case catalogVariants = "catalog_variants"
     }
 }
 
@@ -163,11 +183,31 @@ enum KapitsaCLI {
         return try decode(PullPlan.self, from: data)
     }
 
+    /// Spawns `kapitsa pull M` as a child process and returns it. The
+    /// caller owns the process and can poll `isRunning` or wait on it.
+    /// The download writes its progress to stdout, which is piped so a
+    /// future progress UI can read it.
+    static func pull(_ model: String) throws -> Process {
+        let binary = candidates.first {
+            FileManager.default.isExecutableFile(atPath: $0)
+        }
+        guard let binary else { throw KapitsaError.noBinary }
+
+        let child = Process()
+        child.executableURL = URL(fileURLWithPath: binary)
+        child.arguments = ["pull", model]
+        child.standardOutput = Pipe()
+        child.standardError = Pipe()
+        try child.run()
+        return child
+    }
+
     private static func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        // No keyDecodingStrategy: every snake_case JSON key has an
+        // explicit CodingKey raw value, and convertFromSnakeCase would
+        // break those explicit raw values.
         do {
-            return try decoder.decode(T.self, from: data)
+            return try JSONDecoder().decode(T.self, from: data)
         } catch {
             throw KapitsaError.badJSON(String(data: data, encoding: .utf8) ?? "<no data>")
         }

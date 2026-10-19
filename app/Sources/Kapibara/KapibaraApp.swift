@@ -62,6 +62,8 @@ struct MenuContent: View {
                 serverSection
                 Divider()
                 modelsSection
+                Divider()
+                downloadSection
             }
             Divider()
             settingsSection
@@ -164,6 +166,72 @@ struct MenuContent: View {
                         Circle()
                             .fill(m.complete ? .green : .orange)
                             .frame(width: 6, height: 6)
+                    }
+                }
+            }
+        }
+    }
+
+    private var downloadSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.t("download.headline")).font(.headline)
+            if model.catalogModels.isEmpty {
+                Text(L10n.t("models.empty"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(model.catalogModels, id: \.self) { name in
+                    catalogModelRow(name)
+                }
+            }
+            if let downloading = model.downloadingModel {
+                HStack {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(L10n.t("download.downloading") + " " + downloading)
+                        .font(.caption)
+                    Spacer()
+                    Button(L10n.t("download.cancel")) { model.cancelDownload() }
+                        .font(.caption2)
+                }
+            }
+            if let error = model.downloadError {
+                Text(error)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    private func catalogModelRow(_ name: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(name)
+                .font(.caption)
+                .fontWeight(.medium)
+            ForEach(model.variants(for: name)) { variant in
+                HStack(spacing: 6) {
+                    Text(variant.variant)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if !variant.fits {
+                        Text(L10n.t("download.does_not_fit"))
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                    Spacer()
+                    if model.installedModelIds.contains(variant.id) {
+                        Text(L10n.t("download.done"))
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    } else if model.downloadingModel == variant.id {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Button(L10n.t("download.button")) {
+                            model.startDownload(variant.id)
+                        }
+                        .font(.caption2)
+                        .disabled(!variant.fits || model.downloadingModel != nil)
                     }
                 }
             }
