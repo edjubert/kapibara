@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.svg" alt="Kapibara logo: a capybara in profile" width="160">
+</p>
+
 # kapibara
 
 Menu bar app for [Kapitsa](https://github.com/nace-ai/kapitsa), the local
