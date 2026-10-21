@@ -63,7 +63,8 @@
 "analytics.total_output_tokens" = "%@ tokens générés";
 "analytics.avg_tps" = "%.1f tok/s moy";
 "analytics.avg_prefill" = "%.0f ms prefill moy";
-"analytics.open_log" = "Ouvrir le journal dans l'éditeur";
+"analytics.open_log" = "Ouvrir les journaux dans %@";
+"analytics.open_log.default_button" = "Ouvrir les journaux dans l’application par défaut";
 "analytics.open_log.default" = "Application par défaut";
 "analytics.open_log.choose" = "Choisir une application pour ouvrir le journal d'activité";
 
