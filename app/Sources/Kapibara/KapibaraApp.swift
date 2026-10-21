@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 import ServiceManagement
 
 @main
@@ -23,39 +24,70 @@ struct KapibaraApp: App {
 struct BarLabel: View {
     @ObservedObject private var model = AppModel.shared
     @AppStorage("menubarDisplay") private var menubarDisplay: String = "both"
+    @State private var animationFrame = 0
+
+    private static let animationFrameCount = 18
+    private static let animationTimer = Timer.publish(every: 0.15, on: .main, in: .common).autoconnect()
+    private static let iconCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 54
+        return cache
+    }()
 
     var body: some View {
         HStack(spacing: 4) {
             if menubarDisplay != "text" {
-                TimelineView(.animation(minimumInterval: 1.0 / 15.0, paused: !isWorking)) { timeline in
-                    let phase = timeline.date.timeIntervalSinceReferenceDate * 2 * .pi / 2.8
-                    let bob = (1 - cos(phase)) / 2
-                    let submerge = isWorking ? CGFloat(bob) : 0
-                    let rippleScale = isWorking ? CGFloat(0.96 + 0.08 * bob) : 1
-
-                    Image(nsImage: KapibaraIcon.menuBarImage(
-                        color: barColor,
-                        submerge: submerge,
-                        rippleScale: rippleScale
-                    ))
+                Image(nsImage: barIcon)
                     .renderingMode(.original)
-                }
-                .id("icon-\(model.stateVersion)-\(isWorking)")
             }
             if menubarDisplay != "icon" {
                 Text(model.barTitle)
                     .id("text-\(model.stateVersion)")
             }
         }
+        .onReceive(Self.animationTimer) { _ in
+            guard isAnimating else { return }
+            animationFrame = (animationFrame + 1) % Self.animationFrameCount
+        }
     }
 
-    private var isWorking: Bool {
+    private var barIcon: NSImage {
+        let frame = isAnimating ? animationFrame : 0
+        let key = "\(iconColorKey)-\(frame)" as NSString
+        if let cached = Self.iconCache.object(forKey: key) {
+            return cached
+        }
+
+        let phase = Double(frame) / Double(Self.animationFrameCount) * 2 * .pi
+        let bob = isAnimating ? (1 - cos(phase)) / 2 : 0
+        let image = KapibaraIcon.menuBarImage(
+            color: barColor,
+            submerge: CGFloat(bob),
+            rippleScale: CGFloat(0.96 + 0.08 * bob)
+        )
+        Self.iconCache.setObject(image, forKey: key)
+        return image
+    }
+
+    private var isAnimating: Bool {
         model.isUp && model.engineActivity != .idle
+    }
+
+    private var iconColorKey: String {
+        switch model.state {
+        case .up:
+            return model.engineActivity == .idle ? "up-idle" : "up-active"
+        case .starting: return "starting"
+        case .down: return "down"
+        }
     }
 
     private var barColor: NSColor {
         switch model.state {
-        case .up: return .systemGreen
+        case .up:
+            return model.engineActivity == .idle
+                ? NSColor.systemGreen.withAlphaComponent(0.8)
+                : .systemGreen
         case .starting: return .systemYellow
         case .down: return .systemGray
         }
@@ -486,7 +518,7 @@ struct MenuContent: View {
             HStack {
                 Spacer()
                 HStack(spacing: 2) {
-                    Button(L10n.t("analytics.open_log")) { model.openActivityLog() }
+                    Button(openLogButtonTitle) { model.openActivityLog() }
                     Menu {
                         logEditorMenuItem(
                             L10n.t("analytics.open_log.default"),
@@ -513,6 +545,16 @@ struct MenuContent: View {
         // Force rebuild on every poll: SwiftUI skips @Published arrays
         // whose content is unchanged.
         .id(model.activityVersion)
+    }
+
+    private var openLogButtonTitle: String {
+        guard model.selectedLogEditorID != AppModel.systemDefaultLogEditorID,
+              let editor = model.logEditors.first(where: {
+                  $0.bundleIdentifier == model.selectedLogEditorID
+              }) else {
+            return L10n.t("analytics.open_log.default_button")
+        }
+        return L10n.t("analytics.open_log", editor.name)
     }
 
     private func statColumn(_ text: String) -> some View {

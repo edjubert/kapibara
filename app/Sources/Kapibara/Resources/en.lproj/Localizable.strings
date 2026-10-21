@@ -63,7 +63,8 @@
 "analytics.total_output_tokens" = "%@ output tokens";
 "analytics.avg_tps" = "%.1f tok/s avg";
 "analytics.avg_prefill" = "%.0f ms avg prefill";
-"analytics.open_log" = "Open log in editor";
+"analytics.open_log" = "Open logs in %@";
+"analytics.open_log.default_button" = "Open logs in default app";
 "analytics.open_log.default" = "System default app";
 "analytics.open_log.choose" = "Choose an app to open the activity log";
 
