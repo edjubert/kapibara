@@ -14,6 +14,18 @@ struct ActivityEntry: Equatable, Identifiable {
     var id: Int { promptTokens &* 31 &+ outputTokens &* 17 &+ Int(tokPerSec) }
 }
 
+/// What the engine is doing right now, inferred from the last lines
+/// of the serve log. A `chat:` line is only written when a request
+/// finishes, so anything else on the last line means work in progress.
+enum EngineActivity: Equatable {
+    /// No request in flight.
+    case idle
+    /// Reading / tokenizing the prompt (prefill).
+    case prefill
+    /// Generating output tokens (decode).
+    case generating
+}
+
 /// Parses `~/.cache/kapitsa/logs/serve-<port>.log` into per-request
 /// entries. The log lines look like:
 ///
@@ -40,14 +52,46 @@ enum ActivityLog {
             .appendingPathComponent(".cache/kapitsa/logs")
     }
 
+    /// The log file for `port`.
+    static func logFileURL(port: Int) -> URL {
+        logDirectory().appendingPathComponent("serve-\(port).log")
+    }
+
     /// Reads the log for `port` and returns the parsed entries, oldest
     /// first. Missing or unreadable log yields an empty list.
     static func entries(port: Int) -> [ActivityEntry] {
-        let url = logDirectory().appendingPathComponent("serve-\(port).log")
-        guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+        guard let text = try? String(contentsOf: logFileURL(port: port), encoding: .utf8) else {
             return []
         }
         return parse(text)
+    }
+
+    /// Infers what the engine is doing right now from the tail of the
+    /// log. A finished request leaves a `chat:` line as the last line;
+    /// anything else means a request is in flight.
+    static func currentActivity(port: Int) -> EngineActivity {
+        guard let text = try? String(contentsOf: logFileURL(port: port), encoding: .utf8) else {
+            return .idle
+        }
+        let lines = text.split(separator: "\n").filter { !$0.isEmpty }
+        // Look at the last few lines: a request may log several lines
+        // (start, prefill done, first token, ...) before the final
+        // `chat:` summary.
+        for line in lines.suffix(5).reversed() {
+            let lower = String(line).lowercased()
+            // A completed request line ends the search: idle.
+            if lower.contains("chat:") && lower.contains("tok/s") {
+                return .idle
+            }
+            if lower.contains("reading") || lower.contains("prefill") {
+                return .prefill
+            }
+            if lower.contains("generating") || lower.contains("decoding")
+                || lower.contains("first token") || lower.contains("token/s") {
+                return .generating
+            }
+        }
+        return .idle
     }
 
     /// Parses the log text. Exposed for tests.

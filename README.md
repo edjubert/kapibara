@@ -35,6 +35,12 @@ chat page is the authoritative interface.
 make -C app install-app
 ```
 
+The app saves the last successful downloaded-model list, catalog and
+context limits to `~/.kapibara/models.json`. It displays this cache
+immediately at launch, then refreshes the downloaded models and catalog
+independently in the background. Refresh and completed downloads update
+the cache; a failed refresh keeps the last successful data visible.
+
 ## Release
 
 ```bash

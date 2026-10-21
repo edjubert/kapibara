@@ -8,6 +8,7 @@
 "server.headline" = "Server";
 "server.up" = "Up";
 "server.down" = "Down";
+"server.starting" = "Starting…";
 "server.start" = "Start server";
 "server.stop" = "Stop server";
 "server.model" = "Model";
@@ -15,10 +16,24 @@
 "server.context" = "Context";
 "server.slots" = "Slots";
 "server.open_chat" = "Open chat page";
+"server.external" = "Started outside Kapibara";
+"server.no_models" = "No model downloaded yet. Download one below.";
+
+/* Context slider */
+"context.auto" = "Auto";
+"context.auto_value" = "Auto (%@)";
+"context.default" = "Default";
+"context.max" = "Max";
+"context.limit_label" = "max %@";
+
+/* Engine activity */
+"engine.prefill" = "Reading prompt…";
+"engine.generating" = "Generating…";
 
 /* Models section */
 "models.headline" = "Downloaded models";
 "models.empty" = "No model downloaded yet.";
+"models.loading" = "Loading downloaded models…";
 "models.complete" = "complete";
 "models.incomplete" = "incomplete";
 "models.includes" = "includes";
@@ -35,6 +50,8 @@
 "download.error" = "Download failed";
 "download.cancel" = "Cancel";
 "download.does_not_fit" = "does not fit this Mac";
+"download.catalog_empty" = "Catalog unavailable.";
+"download.catalog_loading" = "Loading catalog…";
 
 /* Analytics section */
 "analytics.headline" = "Activity";
@@ -46,11 +63,22 @@
 "analytics.total_output_tokens" = "%@ output tokens";
 "analytics.avg_tps" = "%.1f tok/s avg";
 "analytics.avg_prefill" = "%.0f ms avg prefill";
+"analytics.open_log" = "Open log in editor";
+"analytics.open_log.default" = "System default app";
+"analytics.open_log.choose" = "Choose an app to open the activity log";
+
+/* Logs section */
+"logs.headline" = "Logs";
+"logs.empty" = "No log yet.";
 
 /* Settings */
 "settings.headline" = "Settings";
 "login.toggle" = "Launch at login";
 "settings.language" = "Language";
+"settings.menubar" = "Menu bar";
+"menubar.icon" = "Icon";
+"menubar.text" = "Model";
+"menubar.both" = "Both";
 "language.system" = "System";
 "language.french" = "Français";
 "language.english" = "English";

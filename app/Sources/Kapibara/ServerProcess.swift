@@ -17,8 +17,9 @@ final class ServerProcess {
     }
 
     /// Spawns `kapitsa serve` on the given port, optionally pinned to a
-    /// model. Replaces any child this object already holds.
-    func start(port: Int, model: String?) throws {
+    /// model and a context window (tokens). Replaces any child this
+    /// object already holds.
+    func start(port: Int, model: String?, context: Int? = nil) throws {
         stop()
 
         let binary = KapitsaCLI.candidates.first {
@@ -29,6 +30,9 @@ final class ServerProcess {
         var arguments = ["serve", "--port", String(port)]
         if let model, !model.isEmpty {
             arguments += ["--model", model]
+        }
+        if let context, context > 0 {
+            arguments += ["--context", String(context)]
         }
 
         let child = Process()

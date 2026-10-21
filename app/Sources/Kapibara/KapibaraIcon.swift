@@ -140,11 +140,13 @@ enum KapibaraIcon {
     }
 
     /// Menu bar glyph: the head with the eyes cut out and two lines of
-    /// water, black on transparent, flagged as a template so macOS tints
-    /// it for light, dark and highlighted menu bars.
-    static func menuBarImage(height: CGFloat = 15) -> NSImage {
+    /// water. With no color, macOS tints the template for its appearance.
+    /// With a color, draw it into the image and disable template tinting:
+    /// MenuBarExtra ignores foreground styles on template images.
+    static func menuBarImage(height: CGFloat = 15, color: NSColor? = nil) -> NSImage {
         let bounds = glyphBounds
         let size = NSSize(width: height * bounds.width / bounds.height, height: height)
+        let ink = color ?? .black
         let image = NSImage(size: size, flipped: false) { rect in
             // Frame the glyph's bounds exactly onto the image rect.
             let scale = rect.width / bounds.width
@@ -154,7 +156,7 @@ enum KapibaraIcon {
                 width: 512 * scale,
                 height: 512 * scale
             ))
-            NSColor.black.setFill()
+            ink.setFill()
             headShape(canvas).fill()
 
             // Cut the eyes and the muzzle out of the head, then put the
@@ -172,13 +174,13 @@ enum KapibaraIcon {
             NSBezierPath(ovalIn: circle(canvas, 318, eyeY, eyeRadius)).fill()
             muzzle.fill()
             context?.compositingOperation = .sourceOver
-            NSColor.black.withAlphaComponent(0.4).setFill()
+            ink.withAlphaComponent(0.4).setFill()
             muzzle.fill()
-            NSColor.black.setFill()
+            ink.setFill()
 
             // Thicker than the app icon's lines: they must survive at
             // menu bar size.
-            NSColor.black.setStroke()
+            ink.setStroke()
             for (y, from, to) in [(waterline, 76, 436), (350, 112, 400)] as [(CGFloat, CGFloat, CGFloat)] {
                 let line = NSBezierPath()
                 line.move(to: canvas.point(from, y))
@@ -189,7 +191,7 @@ enum KapibaraIcon {
             }
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = color == nil
         return image
     }
 

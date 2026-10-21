@@ -8,6 +8,7 @@
 "server.headline" = "Serveur";
 "server.up" = "En ligne";
 "server.down" = "Arrêté";
+"server.starting" = "Démarrage…";
 "server.start" = "Démarrer le serveur";
 "server.stop" = "Arrêter le serveur";
 "server.model" = "Modèle";
@@ -15,10 +16,24 @@
 "server.context" = "Contexte";
 "server.slots" = "Slots";
 "server.open_chat" = "Ouvrir la page de chat";
+"server.external" = "Lancé hors de Kapibara";
+"server.no_models" = "Aucun modèle téléchargé. Téléchargez-en un ci-dessous.";
+
+/* Réglette de contexte */
+"context.auto" = "Auto";
+"context.auto_value" = "Auto (%@)";
+"context.default" = "Défaut";
+"context.max" = "Max";
+"context.limit_label" = "max %@";
+
+/* Activité du moteur */
+"engine.prefill" = "Lecture du prompt…";
+"engine.generating" = "Génération…";
 
 /* Section modèles */
 "models.headline" = "Modèles téléchargés";
 "models.empty" = "Aucun modèle téléchargé.";
+"models.loading" = "Chargement des modèles téléchargés…";
 "models.complete" = "complet";
 "models.incomplete" = "incomplet";
 "models.includes" = "inclus";
@@ -35,6 +50,8 @@
 "download.error" = "Échec du téléchargement";
 "download.cancel" = "Annuler";
 "download.does_not_fit" = "ne tient pas sur ce Mac";
+"download.catalog_empty" = "Catalogue indisponible.";
+"download.catalog_loading" = "Chargement du catalogue…";
 
 /* Section activité */
 "analytics.headline" = "Activité";
@@ -46,11 +63,22 @@
 "analytics.total_output_tokens" = "%@ tokens générés";
 "analytics.avg_tps" = "%.1f tok/s moy";
 "analytics.avg_prefill" = "%.0f ms prefill moy";
+"analytics.open_log" = "Ouvrir le journal dans l'éditeur";
+"analytics.open_log.default" = "Application par défaut";
+"analytics.open_log.choose" = "Choisir une application pour ouvrir le journal d'activité";
+
+/* Section journaux */
+"logs.headline" = "Journaux";
+"logs.empty" = "Aucun journal.";
 
 /* Réglages */
 "settings.headline" = "Réglages";
 "login.toggle" = "Lancer au démarrage";
 "settings.language" = "Langue";
+"settings.menubar" = "Barre de menu";
+"menubar.icon" = "Icône";
+"menubar.text" = "Modèle";
+"menubar.both" = "Les deux";
 "language.system" = "Système";
 "language.french" = "Français";
 "language.english" = "English";

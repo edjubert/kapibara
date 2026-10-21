@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 /// A mutable box that is safe to capture in a `@Sendable` closure.
 private final class LockedBox<T>: @unchecked Sendable {
@@ -9,6 +10,17 @@ private final class LockedBox<T>: @unchecked Sendable {
         get { lock.lock(); defer { lock.unlock() }; return _value }
         set { lock.lock(); defer { lock.unlock() }; _value = newValue }
     }
+}
+
+/// What a poll of the port finds.
+enum ServerProbe: Equatable {
+    /// Nothing listens on the port.
+    case down
+    /// Something accepts TCP connections but /health does not answer
+    /// "ok" yet: the server is loading a model.
+    case starting
+    /// /health answers "ok".
+    case up
 }
 
 /// The model being served, from `GET /v1/models`.
@@ -72,5 +84,38 @@ enum ServerClient {
               let response = try? JSONDecoder().decode(ModelsResponse.self, from: data)
         else { return nil }
         return response.data.first
+    }
+
+    /// Probes the port: down when nothing listens, starting when the
+    /// TCP port is open but /health does not answer "ok" yet (the
+    /// server is loading a model), up when /health answers "ok".
+    static func probe(port: Int) -> ServerProbe {
+        guard isPortOpen(port: port) else { return .down }
+        return health(port: port) ? .up : .starting
+    }
+
+    /// True when a TCP connection to 127.0.0.1:port succeeds. Uses a
+    /// raw socket so it works even when the server has not started
+    /// its HTTP layer yet.
+    private static func isPortOpen(port: Int) -> Bool {
+        var addr = sockaddr_in()
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = UInt16(port).bigEndian
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+
+        let sock = socket(AF_INET, SOCK_STREAM, 0)
+        guard sock >= 0 else { return false }
+        defer { close(sock) }
+
+        var tv = timeval(tv_sec: 1, tv_usec: 0)
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+        setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+
+        let result = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                connect(sock, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        return result == 0
     }
 }
