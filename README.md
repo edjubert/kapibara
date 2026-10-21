@@ -12,6 +12,10 @@ activity, all from the macOS menu bar.
 Named after Pyotr Kapitsa, the physicist the engine is named for. The
 mascot is a capybara; it keeps an eye on your GPU.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Kapibara menu bar app showing server status, downloaded models, activity, logs and settings" width="320">
+</p>
+
 ```
 kapibara/
 ├── app/      SwiftUI macOS menu bar app (Kapibara.app), embeds the CLI
