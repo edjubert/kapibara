@@ -75,7 +75,8 @@ struct BarLabel: View {
 
     private var iconColorKey: String {
         switch model.state {
-        case .up: return "up"
+        case .up:
+            return model.engineActivity == .idle ? "up-idle" : "up-active"
         case .starting: return "starting"
         case .down: return "down"
         }
@@ -83,7 +84,10 @@ struct BarLabel: View {
 
     private var barColor: NSColor {
         switch model.state {
-        case .up: return .systemGreen
+        case .up:
+            return model.engineActivity == .idle
+                ? NSColor.systemGreen.withAlphaComponent(0.8)
+                : .systemGreen
         case .starting: return .systemYellow
         case .down: return .systemGray
         }
