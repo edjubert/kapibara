@@ -26,19 +26,31 @@ struct BarLabel: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            // Bake the state color into a non-template image so macOS
-            // preserves it in the status item. The .id() forces the
-            // image to be rebuilt when the state changes.
             if menubarDisplay != "text" {
-                Image(nsImage: KapibaraIcon.menuBarImage(color: barColor))
+                TimelineView(.animation(minimumInterval: 1.0 / 15.0, paused: !isWorking)) { timeline in
+                    let phase = timeline.date.timeIntervalSinceReferenceDate * 2 * .pi / 2.8
+                    let bob = (1 - cos(phase)) / 2
+                    let submerge = isWorking ? CGFloat(bob) : 0
+                    let rippleScale = isWorking ? CGFloat(0.96 + 0.08 * bob) : 1
+
+                    Image(nsImage: KapibaraIcon.menuBarImage(
+                        color: barColor,
+                        submerge: submerge,
+                        rippleScale: rippleScale
+                    ))
                     .renderingMode(.original)
-                    .id("icon-\(model.stateVersion)")
+                }
+                .id("icon-\(model.stateVersion)-\(isWorking)")
             }
             if menubarDisplay != "icon" {
                 Text(model.barTitle)
                     .id("text-\(model.stateVersion)")
             }
         }
+    }
+
+    private var isWorking: Bool {
+        model.isUp && model.engineActivity != .idle
     }
 
     private var barColor: NSColor {

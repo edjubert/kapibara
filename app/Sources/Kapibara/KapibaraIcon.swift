@@ -40,25 +40,32 @@ enum KapibaraIcon {
     ]
 
     /// Bounds of the menu bar glyph on the 512 canvas.
-    private static let glyphBounds = CGRect(x: 60, y: 142, width: 392, height: 216)
+    private static let glyphBounds = CGRect(x: 60, y: 128, width: 392, height: 230)
 
     /// Maps 512-unit, top-left-origin artwork coordinates into `rect`
     /// (bottom-left origin, as AppKit draws).
     private struct Canvas {
         let rect: CGRect
         let scale: CGFloat
+        let yOffset: CGFloat
 
-        init(in rect: CGRect) {
+        init(in rect: CGRect, yOffset: CGFloat = 0) {
             self.rect = rect
             self.scale = rect.width / 512
+            self.yOffset = yOffset
         }
 
         func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + x * scale, y: rect.maxY - y * scale)
+            CGPoint(x: rect.minX + x * scale, y: rect.maxY - y * scale + yOffset)
         }
 
         func rect(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) -> CGRect {
-            CGRect(x: rect.minX + x * scale, y: rect.maxY - (y + height) * scale, width: width * scale, height: height * scale)
+            CGRect(
+                x: rect.minX + x * scale,
+                y: rect.maxY - (y + height) * scale + yOffset,
+                width: width * scale,
+                height: height * scale
+            )
         }
     }
 
@@ -143,19 +150,32 @@ enum KapibaraIcon {
     /// water. With no color, macOS tints the template for its appearance.
     /// With a color, draw it into the image and disable template tinting:
     /// MenuBarExtra ignores foreground styles on template images.
-    static func menuBarImage(height: CGFloat = 15, color: NSColor? = nil) -> NSImage {
+    static func menuBarImage(
+        height: CGFloat = 15,
+        color: NSColor? = nil,
+        submerge: CGFloat = 0,
+        rippleScale: CGFloat = 1
+    ) -> NSImage {
         let bounds = glyphBounds
         let size = NSSize(width: height * bounds.width / bounds.height, height: height)
         let ink = color ?? .black
         let image = NSImage(size: size, flipped: false) { rect in
             // Frame the glyph's bounds exactly onto the image rect.
             let scale = rect.width / bounds.width
-            let canvas = Canvas(in: CGRect(
+            let glyphRect = CGRect(
                 x: rect.minX - bounds.minX * scale,
                 y: rect.minY - (512 - bounds.maxY) * scale,
                 width: 512 * scale,
                 height: 512 * scale
-            ))
+            )
+            // Move the capybara independently of the water and clip it
+            // at the surface, while keeping its eyes above water.
+            let waterCanvas = Canvas(in: glyphRect)
+            let canvas = Canvas(in: glyphRect, yOffset: -submerge * 50 * scale)
+            let context = NSGraphicsContext.current
+            context?.saveGraphicsState()
+            NSBezierPath(rect: waterCanvas.rect(x: 0, y: 0, width: 512, height: waterline)).addClip()
+
             ink.setFill()
             headShape(canvas).fill()
 
@@ -168,7 +188,6 @@ enum KapibaraIcon {
                 xRadius: 12 * canvas.scale,
                 yRadius: 12 * canvas.scale
             )
-            let context = NSGraphicsContext.current
             context?.compositingOperation = .clear
             NSBezierPath(ovalIn: circle(canvas, 194, eyeY, eyeRadius)).fill()
             NSBezierPath(ovalIn: circle(canvas, 318, eyeY, eyeRadius)).fill()
@@ -177,14 +196,17 @@ enum KapibaraIcon {
             ink.withAlphaComponent(0.4).setFill()
             muzzle.fill()
             ink.setFill()
+            context?.restoreGraphicsState()
 
             // Thicker than the app icon's lines: they must survive at
             // menu bar size.
             ink.setStroke()
             for (y, from, to) in [(waterline, 76, 436), (350, 112, 400)] as [(CGFloat, CGFloat, CGFloat)] {
                 let line = NSBezierPath()
-                line.move(to: canvas.point(from, y))
-                line.line(to: canvas.point(to, y))
+                let start = 256 + (from - 256) * rippleScale
+                let end = 256 + (to - 256) * rippleScale
+                line.move(to: waterCanvas.point(start, y))
+                line.line(to: waterCanvas.point(end, y))
                 line.lineWidth = 16 * canvas.scale
                 line.lineCapStyle = .round
                 line.stroke()
@@ -199,30 +221,27 @@ enum KapibaraIcon {
         canvas.rect(x: x - r, y: y - r, width: r * 2, height: r * 2)
     }
 
-    /// The head above the surface: a boxy skull with a flat waterline
-    /// base, and a small round ear on each top corner.
+    /// The boxy skull with rounded ears flowing smoothly into its contour.
     private static func headShape(_ canvas: Canvas) -> NSBezierPath {
         let p = canvas.point
         let path = NSBezierPath()
 
-        // Skull.
         path.move(to: p(128, waterline))
         path.line(to: p(128, 236))
-        path.curve(to: p(192, 172), controlPoint1: p(128, 200), controlPoint2: p(156, 172))
+        path.curve(to: p(140, 194), controlPoint1: p(128, 215), controlPoint2: p(143, 205))
+        path.curve(to: p(135, 166), controlPoint1: p(137, 182), controlPoint2: p(134, 176))
+        path.curve(to: p(147, 143), controlPoint1: p(135, 155), controlPoint2: p(139, 143))
+        path.curve(to: p(168, 143), controlPoint1: p(155, 143), controlPoint2: p(162, 137))
+        path.curve(to: p(184, 166), controlPoint1: p(174, 151), controlPoint2: p(183, 154))
+        path.curve(to: p(192, 172), controlPoint1: p(185, 170), controlPoint2: p(190, 172))
         path.line(to: p(320, 172))
-        path.curve(to: p(384, 236), controlPoint1: p(356, 172), controlPoint2: p(384, 200))
+        path.curve(to: p(328, 166), controlPoint1: p(322, 172), controlPoint2: p(327, 170))
+        path.curve(to: p(344, 143), controlPoint1: p(329, 154), controlPoint2: p(338, 151))
+        path.curve(to: p(365, 143), controlPoint1: p(350, 137), controlPoint2: p(357, 143))
+        path.curve(to: p(377, 166), controlPoint1: p(373, 143), controlPoint2: p(377, 155))
+        path.curve(to: p(372, 194), controlPoint1: p(378, 176), controlPoint2: p(375, 182))
+        path.curve(to: p(384, 236), controlPoint1: p(369, 205), controlPoint2: p(384, 215))
         path.line(to: p(384, waterline))
-        path.close()
-
-        // Left ear.
-        path.move(to: p(138, 190))
-        path.curve(to: p(192, 180), controlPoint1: p(134, 148), controlPoint2: p(188, 144))
-        path.close()
-
-        // Right ear, wound the same way as the skull so the overlap
-        // unions instead of cancelling out.
-        path.move(to: p(320, 180))
-        path.curve(to: p(374, 190), controlPoint1: p(324, 144), controlPoint2: p(378, 148))
         path.close()
 
         return path
